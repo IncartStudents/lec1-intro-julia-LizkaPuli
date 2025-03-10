@@ -162,12 +162,13 @@ display(Plots.plot(p1,p2,p3,p4,layout=(2,2)))
 
 import Base.+
 +(x::String, y::String)=string(x,y)
-"hey"+"hello"
+println("hey"+"hello")
 
 s(h,j)=println("arg")
 s(h::Int,j::Float64)=println("int and float")
 s(h::Float64,j::Float64)=println("float and float")
-  s(h::Int,j::Int)=println("int and int")
+s(h::Int,j::Int)=println("int and int")
+println(s(2,3))
 
 #Basic linear algebra
 A=rand(1:4,3,3)
