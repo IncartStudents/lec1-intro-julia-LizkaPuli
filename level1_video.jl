@@ -142,8 +142,9 @@ x= -3:0.1:3
 f(x)=x^2
 y=f.(x)
 plotlyjs()
-Plots.plot(x,y)
-scatter!(x,y)
+p = Plots.plot(x, y) 
+scatter!(p, x, y)  
+display(p) 
 
 xflip!()
 
@@ -155,17 +156,18 @@ p1=Plots.plot(x,x)
 p2=Plots.plot(x,x.^2)
 p3=Plots.plot(x,x.^3)
 p4=Plots.plot(x,x.^4)
-Plots.plot(p1,p2,p3,p4,layout=(2,2))
+display(Plots.plot(p1,p2,p3,p4,layout=(2,2)))
 
 @which 3+3.2
 
+import Base.+
 +(x::String, y::String)=string(x,y)
 "hey"+"hello"
 
 s(h,j)=println("arg")
 s(h::Int,j::Float64)=println("int and float")
 s(h::Float64,j::Float64)=println("float and float")
-s(h::Int,j::Int)=println("int and int")
+  s(h::Int,j::Int)=println("int and int")
 
 #Basic linear algebra
 A=rand(1:4,3,3)
