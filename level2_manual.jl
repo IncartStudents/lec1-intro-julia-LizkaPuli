@@ -11,18 +11,21 @@
 # Что происходит с глобальной константой PI, о чем предупреждает интерпретатор?
 const PI = 3.14159
 PI = 3.14
+# предупредят о замене глобальной константы, так как при замене в местах использования PI как константы модет сохраняться старое значение 
 
 # Что происходит с типами глобальных переменных ниже, какого типа `c` и почему?
 a = 1
 b = 2.0
 c = a + b
+# а это тип int, b это тип float, c это тоже float. причина: Automatic promotion for built-in arithmetic types and operator
 
 # Что теперь произошло с переменной а? Как происходит биндинг имен в Julia?
 a = "foo"
+# а стала string
 
 # Что происходит с глобальной переменной g и почему? Чем ограничен биндинг имен в Julia?
 g::Int = 1
-g = "hi"
+#g = "hi"
 
 function greet()
     g = "hello"
@@ -30,25 +33,39 @@ function greet()
 end
 greet()
 
+# когда мы присвемваем тип данных, то уже глобально мы не можем менять тип,
+# но в функции без специального указания global там находятся локальные перменные 
+
 # Чем отличаются присвоение значений новому имени - и мутация значений?
 v = [1,2,3]
 z = v
 v[1] = 3
 v = "hello"
 z
+# присвоение это передача значения, но мы просто туда сохраняем данное значение; дальше при мутации v
+# z не меняет свое значени 
 
 # Написать тип, параметризованный другим типом
+a3::Array{Int} = [1, 2, 3]
 
 #=
 Написать функцию для двух аругментов, не указывая их тип,
 и вторую функцию от двух аргментов с конкретными типами,
 дать пример запуска
 =#
+function f_without(a, b)
+    return a + b
+end
+println(f_without(3, 4))  
+function f_with(a::Int, b::Int)
+    return a + b
+end
+println(f_with(3, 4)) 
 
 #=
-Абстрактный тип - ключевое слово?
-Примитивный тип - ключевое слово?
-Композитный тип - ключевое слово?
+Абстрактный тип - ключевое слово? abstract typу
+Примитивный тип - ключевое слово? не требуют ключевого слова для создания, так как они встроены в язык
+Композитный тип - ключевое слово? struct или mutable struct
 =#
 
 #=
@@ -58,6 +75,41 @@ z
 (функция выводит произвольный текст в консоль)
 =#
 
+abstract type patient end
+struct sick <: patient
+    name::String
+    room_number::Int
+    treatment::Bool  
+end
+struct healthy <: patient
+    name::String
+    appointment_date::String
+end
+
+function patient_info(p::patient)
+    println("Информация о пациенте:")
+    if p isa sick
+        println("Пациент: ", p.name, ", находится в палате №", p.room_number)
+    elseif p isa healthy
+        println("Пациент: ", p.name, ", записан на прием ", p.appointment_date)
+    end
+end
+
+function sick_status(p::sick)
+    println("Пациент: ", p.name, " находится в палате №", p.room_number,". Статус:")
+    if p.treatment
+        println("Назначено лечение")
+    else
+        println("Лечение не назначено")
+    end
+end
+
+p1 = sick("Иван Иванов", 12, true)  
+p2 = healthy("Анна Смирнова", "15.05.2025")
+
+patient_info(p1)   
+patient_info(p2) 
+sick_status(p1)    
 
 #===========================================================================================
 2. Функции:
@@ -68,14 +120,31 @@ z
 =#
 
 # Пример обычной функции
+function add(a, b)
+    return a + b
+end
 
 # Пример лямбда-функции (аннонимной функции)
+subtraction = (a, b) -> a + b
 
 # Пример функции с переменным количеством аргументов
+function sum_numbers(arg...)
+    return sum(arg) 
+end
 
 # Пример функции с именованными аргументами
+function print_info(name; age)
+    println("Имя: $name, Возраст: $age")
+end
 
 # Функции с переменным кол-вом именованных аргументов
+function order(items...)
+    for (item, price) in items
+        println("$item: $price рублей")
+        total_price += price
+    end
+    println("Итоговая сумма: $total_price рублей")
+end
 
 #=
 Передать кортеж в функцию, которая принимает на вход несколько аргументов.
@@ -83,6 +152,17 @@ z
 Использовать splatting - деструктуризацию кортежа в набор аргументов.
 =#
 
+function fun_1(arg...)
+    return sum(arg) 
+end
+
+function fun_2(arg...)
+    return arg
+end
+
+tuple_1=(1,2,3)
+println(fun_1(tuple_1...))
+println(fun_2(tuple_1...))
 
 #===========================================================================================
 3. loop fusion, broadcast, filter, map, reduce, list comprehension
@@ -94,6 +174,16 @@ z
 - с помощью reduce
 =#
 
+arr = [1, 2, 3, 4, 5]
+x=1
+for i in arr
+    global x *= i
+end
+println(x)
+
+result = reduce(*, arr)
+println(result)
+
 #=
 Написать функцию от одного аргумента и запустить ее по всем элементам массива
 с помощью точки (broadcast)
@@ -102,24 +192,49 @@ c помощью list comprehension
 указать, чем это лучше явного цикла?
 =#
 
-# Перемножить вектор-строку [1 2 3] на вектор-столбец [10,20,30] и объяснить результат
+function sqr(x)
+    return x ^ 2
+end
 
+println(sqr.(arr))
+println(map(sqr, arr))
+println([sqr(x) for x in arr])
+
+# Эти подходы делают код более компактным и производительнее. 
+
+# Перемножить вектор-строку [1 2 3] на вектор-столбец [10,20,30] и объяснить результат
+row_vector = [1 2 3]        
+column_vector = [10, 20, 30] 
+println(row_vector * column_vector)
 
 # В одну строку выбрать из массива [1, -2, 2, 3, 4, -5, 0] только четные и положительные числа
+arr_ = [1, -2, 2, 3, 4, -5, 0]
+println([i for i in arr_ if (x % 2 == 0) && (x > 0)])
 
 
 # Объяснить следующий код обработки массива names - что за number мы в итоге определили?
 using Random
 Random.seed!(123)
 names = [rand('A':'Z') * '_' * rand('0':'9') * rand([".csv", ".bin"]) for _ in 1:100]
-# ---
+# вызывли пакет рандом 
+# фиксируем последовательность случайных чисел
+# создаем 100 названий файлов рандомно с расширением либо .cvs либо .bin
 same_names = unique(map(y -> split(y, ".")[1], filter(x -> startswith(x, "A"), names)))
+#фильтр проверяет начинается ли строка name с буквы A, а потом создает новый массив с названиями файлов без расширения(map(функция, коллекция))
 numbers = parse.(Int, map(x -> split(x, "_")[end], same_names))
+#теперь создает массив из цифр в строковам формате и с помощью функции переводим
 numbers_sorted = sort(numbers)
+# сортируем по возрастнию
 number = findfirst(n -> !(n in numbers_sorted), 0:9)
+# возвращает индекс первого пропущенной цифры от 0 до 9
+println(number)
 
 # Упростить этот код обработки:
-
+Random.seed!(123)
+names = ["$(rand('A':'Z'))_$(rand('0':'9'))$(rand([".csv", ".bin"]))" for _ in 1:100]
+numbers_sorted = sort(unique(parse.(Int, [split(split(x, "_")[2], ".")[1] for x in names if startswith(x, "A")])))
+number = findfirst(n -> !(n in numbers_sorted), 0:9)
+println(number)
 
 #===========================================================================================
 4. Свой тип данных на общих интерфейсах
@@ -129,6 +244,13 @@ number = findfirst(n -> !(n in numbers_sorted), 0:9)
 написать свой тип ленивого массива, каждый элемент которого
 вычисляется при взятии индекса (getindex) по формуле (index - 1)^2
 =#
+struct lazyarray
+    index::Int
+end
+Base.show(io::IO,::lazyarray) = print(io, (lazyarray.index - 1)^2)
+
+a = lazyarray(1)
+println(a)  
 
 #=
 Написать два типа объектов команд, унаследованных от AbstractCommand,
