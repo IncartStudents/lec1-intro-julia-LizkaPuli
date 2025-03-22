@@ -247,9 +247,9 @@ println(number)
 struct lazyarray
     index::Int
 end
-Base.show(io::IO,::lazyarray) = print(io, (lazyarray.index - 1)^2)
+Base.show(io::IO,getindex::lazyarray) = print(io, (getindex.index - 1)^2)
 
-a = lazyarray(1)
+a = lazyarray(5)
 println(a)  
 
 #=
@@ -259,38 +259,149 @@ println(a)
 `ChangeAtCmd(i, val)` - меняет элемент на позиции i на значение val
 Каждая команда имеет конструктор и реализацию метода apply!
 =#
-abstract type AbstractCommand end
-apply!(cmd::AbstractCommand, target::Vector) = error("Not implemented for type $(typeof(cmd))")
 
+abstract type AbstractCommand end
+apply!(cmd::AbstractCommand) = println("Not implemented for type $(typeof(cmd))")
+struct SortCmd <: AbstractCommand
+    arr::Vector{Int}  
+end
+apply!(inf::SortCmd) = sort!(inf.arr) 
+struct ChangeAtCmd <: AbstractCommand
+    arr::Vector{Int} 
+    i::Int            
+    val::Int         
+end
+apply!(inf::ChangeAtCmd) = inf.arr[inf.i] = inf.val 
+struct sum_arr<: AbstractCommand
+    arr::Vector{Int}  
+end
+
+arr = [3, 1, 4, 1, 5, 9]
+println(apply!(SortCmd(arr)))
+println(apply!(ChangeAtCmd(arr, 2, 7)))
+println(arr)
+println(apply!(sum_arr(arr)))
 
 # Аналогичные команды, но без наследования и в виде замыканий (лямбда-функций)
-
+sort_cmd = (arr::Vector{Int}) -> sort!(arr)
+change_at_cmd = (arr::Vector{Int}, i::Int, val::Int) -> arr[i] = val
+arr = [3, 1, 4, 1, 5, 9]
+println(sort_cmd(arr))
+println(change_at_cmd(arr, 2, 7))
+println(arr)
 
 #===========================================================================================
-5. Тесты: как проверять функции?
+5. Тесты: как проверять функции? с помощью модуля Test, используя @test для сравнения ожидаемого и истинного результата
 =#
-
 # Написать тест для функции
-
+using Test
+@test f_without(2, 3) == 5
 
 #===========================================================================================
-6. Дебаг: как отладить функцию по шагам?
+6. Дебаг: как отладить функцию по шагам? - чтобы отладить функцию по шагам, я используем Debugger.@enter имя_функции(аргументы)
+(используем Debugger.@enter потому что конфликт с vscode),
+затем в отладчике ввожу команды
+(я рассмотрела n,fr,q,so)
+делаю это в терминале, потому что в коде отладчик ведет себя непредсказуемо
+(In f_without(a, b) at c:\Users\kostr\Desktop\juliaProject\lec1-intro-julia-LizkaPuli\level2_manual.jl:56
+ 56  function f_without(a, b)
+>57      return a + b
+ 58  end
+
+About to run: (+)(2, 3)
+julia> s
+
+1|debug> o                                                                                                                                                                                               
+1|debug> 
+1|debug> 
+1|debug> so
+  1.245571 seconds (7.00 M allocations: 192.889 MiB, 7.61% gc time)
+WARNING: replacing module Foo.
+Main.Foo
+
+julia> ERROR: UndefVarError: `s` not defined in `Main`
+Suggestion: check for spelling errors or missing imports.)
 =#
 
 #=
 Отладить функцию по шагам с помощью макроса @enter и точек останова
+
+при этом я просто вводила два раза so (нажала enter) so (нажала enter)
 =#
 
+using Debugger
 
-#===========================================================================================
-7. Профилировщик: как оценить производительность функции?
-=#
+#Debugger.@enter f_without(2, 3)
 
 #=
-Оценить производительность функции с помощью макроса @profview,
-и добавить в этот репозиторий файл со скриншотом flamechart'а
+n = next line
+q = exit:
+
+julia> Debugger.@enter f_without(2, 3)
+In f_without(a, b) at c:\Users\kostr\Desktop\juliaProject\lec1-intro-julia-LizkaPuli\level2_manual.jl:56
+ 56  function f_without(a, b)
+>57      return a + b
+ 58  end
+
+About to run: (+)(2, 3)
+1|debug> n
+In f_without(a, b) at c:\Users\kostr\Desktop\juliaProject\lec1-intro-julia-LizkaPuli\level2_manual.jl:56
+ 56  function f_without(a, b)
+>57      return a + b
+ 58  end
+
+About to run: return 5
+1|debug> q
+
+fr = frame:
+
+julia> Debugger.@enter f_without(2, 3)
+In f_without(a, b) at c:\Users\kostr\Desktop\juliaProject\lec1-intro-julia-LizkaPuli\level2_manual.jl:56
+ 56  function f_without(a, b)
+>57      return a + b
+ 58  end
+
+About to run: (+)(2, 3)
+1|debug> fr
+[1] f_without(a, b) at c:\Users\kostr\Desktop\juliaProject\lec1-intro-julia-LizkaPuli\level2_manual.jl:56
+  | a::Int64 = 2
+  | b::Int64 = 3
+1|debug> q
+
+so = out:
+
+julia> Debugger.@enter f_without(2, 3)
+In f_without(a, b) at c:\Users\kostr\Desktop\juliaProject\lec1-intro-julia-LizkaPuli\level2_manual.jl:56
+ 56  function f_without(a, b)
+>57      return a + b
+ 58  end
+
+About to run: (+)(2, 3)
+1|debug> so
+5
 =#
-function generate_data(len)
+#===========================================================================================
+7. Профилировщик: как оценить производительность функции?
+ =#
+ 
+ #=
+ Оценить производительность функции с помощью макроса @profview,
+ и добавить в этот репозиторий файл со скриншотом flamechart'а
+ ответ:
+  первая функция создает слишком много копий из-за этого функция идет слишком медленно
+  вторая функция уже быстрее, я меньшила копии
+ =#
+
+ #=
+using Pkg
+Pkg.add("Profile")
+Pkg.add("ProfileView")  
+=#
+
+using Profile, ProfileView
+
+
+ function generate_data(len)
     vec1 = Any[]
     for k = 1:len
         r = randn(1,1)
@@ -303,31 +414,80 @@ end
 
 @time generate_data(1_000_000);
 
+Profile.clear()
+
+@profile  generate_data(1_000_000)
+
+ProfileView.view()
 
 # Переписать функцию выше так, чтобы она выполнялась быстрее:
 
+function generate_data_fast(len)
+    vec1 = randn(len)  
+    vec1 .= vec1 .^ 3 .-  (sum( sort!(vec1)) / len )  
+    return vec1
+end
+
+@time generate_data_fast(1_000_000);
+
+Profile.clear()
+
+@profile  generate_data_fast(1_000_000)
+
+ProfileView.view()
 
 #===========================================================================================
 8. Отличия от матлаба: приращение массива и предварительная аллокация?
 =#
-
 #=
 Написать функцию определения первой разности, которая принимает и возвращает массив
 и для каждой точки входного (x) и выходного (y) выходного массива вычисляет:
 y[i] = x[i] - x[i-1]
 =#
-
+function first_difference(x::Array)
+    y = Number[]  
+    for i in 1:length(x)  
+        if i == 1
+            push!(y, x[i]) 
+        else
+            push!(y, x[i] - x[i-1]) 
+        end
+    end
+    return y
+end
+x = [3, 5, 7, 10, 15]
+println("Входной массив: ", x)
+println("Выходной массив: ", first_difference(x))
 #=
 Аналогичная функция, которая отличается тем, что внутри себя не аллоцирует новый массив y,
 а принимает его первым аргументом, сам массив аллоцируется до вызова функции
 =#
-
+function first_difference_2arg(x::Array, y::Array)
+    for i in 1:length(x)
+        if i == 1
+            push!(y, x[i])
+        else
+            push!(y, x[i] - x[i-1]) 
+        end
+    end
+    return y
+end
+x = [3, 5, 7, 10, 15]
+y = Number[] 
+first_difference_2arg(x, y)
+println("Входной массив: ", x)
+println("Выходной массив: ", y)  
 #=
 Написать код, который добавляет элементы в конец массива, в начало массива,
 в середину массива
 =#
 
-
+push!(x, 6)
+println("Массив после добавления в конец: ", x)
+insert!(x, 1, 6)
+println("Массив после добавления в начало: ",x )
+insert!(x, Int(ceil((length(x)+1) / 2)), 6)
+println("Массив после добавления в середину: ",x)
 #===========================================================================================
 9. Модули и функции: как оборачивать функции внутрь модуля, как их экспортировать
 и пользоваться вне модуля?
@@ -340,24 +500,28 @@ y[i] = x[i] - x[i-1]
 воспользоваться обеими функциями вне модуля
 =#
 module Foo
-    #export ?
-end
-# using .Foo ?
-# import .Foo ?
-
+in_function(x) = x^2
+export out_function 
+out_function(x) = in_function(x) + 1
+end 
+using .Foo  
+println(out_function(3)) 
+import .Foo: in_function
+println(in_function(3)) 
 
 #===========================================================================================
 10. Зависимости, окружение и пакеты
 =#
 
 # Что такое environment, как задать его, как его поменять во время работы?
+#В Project.toml хранятся только имена пакетов, но не версии; Manifest.toml записаны точные версии всех пакетов и их зависимостей.
 
-# Что такое пакет (package), как добавить новый пакет?
+# Что такое пакет (package), как добавить новый пакет? локально для файла или для проекта 
 
-# Как начать разрабатывать чужой пакет?
+# Как начать разрабатывать чужой пакет? скачать, настроить, редактировать/использовать
 
 #=
-Как создать свой пакет?
+Как создать свой пакет? использовать PkgTemplates
 (необязательно, эксперименты с PkgTemplates проводим вне этого репозитория)
 =#
 
@@ -366,24 +530,30 @@ end
 11. Сохранение переменных в файл и чтение из файла.
 Подключить пакеты JLD2, CSV.
 =#
-
+#using Pkg
+#Pkg.add("JLD2")
+#Pkg.add("CSV")
 # Сохранить и загрузить произвольные обхекты в JLD2, сравнить их
-
 # Сохранить и загрузить табличные объекты (массивы) в CSV, сравнить их
-
+using CSV
+using DataFrames
+data = DataFrame(A = 1:5, B = [2.3, 4.5, 6.7, 8.9, 0.1])
+CSV.write("data.csv", data)
+loaded_data = CSV.read("data.csv", DataFrame)
+println(data == loaded_data)
 
 #===========================================================================================
 12. Аргументы запуска Julia
 =#
 
 #=
-Как задать окружение при запуске?
+Как задать окружение при запуске?Дмумя файлами Project.toml иManifest.toml 
 =#
 
 #=
 Как задать скрипт, который будет выполняться при запуске:
-а) из файла .jl
-б) из текста команды? (см. флаг -e)
+а) из файла .jl - julia --project=. name.jl
+б) из текста команды? (см. флаг -e) - julia --project=. -e 'строчка, которую хотим проверить'
 =#
 
 #=
