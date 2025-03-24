@@ -1,20 +1,23 @@
 module Boids
 using Plots
-
+using Random
 
 mutable struct WorldState
-    boid::Tuple{Float64, Float64}
+    boids::Vector{Tuple{Float64, Float64}}
     height::Float64
     width::Float64
     function WorldState(n_boids, width, height)
-        # TODO: добавить случайные позиции для n_boids птичек вместо одной
-        
-        new((width/2, height/2), width, height)
+        n_boids=40
+        boids = [(rand() * width, rand() * height) for _ in 1:n_boids]  
+        new(boids, width, height)
     end
 end
 
 function update!(state::WorldState)
-    state.boid = state.boid .+ 0.1
+    for i in eachindex(state.boids)
+        state.boids[i] = (state.boids[i][1] + 0.1,  
+                          state.boids[i][2] + 0.1)  
+    end
     # TODO: реализация уравнения движения птичек
 
     return nothing
@@ -29,8 +32,9 @@ function (@main)(ARGS)
 
     anim = @animate for time = 1:100
         update!(state)
-        boids = [state.boid]
-        scatter(boids, xlim = (0, state.width), ylim = (0, state.height))
+        x = [b[1] for b in state.boids]
+        y = [b[2] for b in state.boids]
+        scatter(x,y, xlim = (0, state.width), ylim = (0, state.height))
     end
     gif(anim, "boids.gif", fps = 10)
 end

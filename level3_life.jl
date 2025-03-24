@@ -1,4 +1,3 @@
-
 module GameOfLife
 using Plots
 
@@ -10,23 +9,29 @@ end
 function step!(state::Life)
     curr = state.current_frame
     next = state.next_frame
-
-    #=
-    TODO: вместо случайного шума
-    реализовать один шаг алгоритма "Игра жизнь"
-    =#
-    for i in 1:length(curr)
-        curr[i] = rand(0:1)
+    n, m = size(curr)  
+    for y in 1:n
+        for x in 1:m
+            neighbors = 0
+            for yS in (y-1):(y+1)
+                for xS in (x-1):(x+1)
+                    if !(yS == y && xS == x)  
+                        neighbors += curr[mod1(yS, n), mod1(xS, m)]
+                    end
+                end
+            end
+            if curr[y, x] == 1
+                next[y, x] = (neighbors == 2 || neighbors == 3) ? 1 : 0
+            else
+                next[y, x] = (neighbors == 3) ? 1 : 0
+            end
+        end
     end
-
-    # Подсказка для граничных условий - тор:
-    # julia> mod1(10, 30)
-    # 10
-    # julia> mod1(31, 30)
-    # 1
+    state.current_frame .= state.next_frame
 
     return nothing
 end
+
 
 function (@main)(ARGS)
     n = 30
@@ -49,3 +54,5 @@ end
 
 using .GameOfLife
 GameOfLife.main("")
+
+
